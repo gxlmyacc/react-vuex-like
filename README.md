@@ -65,6 +65,9 @@ export default store;
 
 support `mapState`,`mapMutations`,`mapGetters`,`mapActions`,`createNamespacedHelpers`. see [Vuex](https://vuex.vuejs.org/guide/)
 
+### Mobx re-export
+`react-vuex-like` also re-export `inject`, `Provider` from `mobx-react`.
+
 ## License
 
 [MIT](./LICENSE)

@@ -4,8 +4,22 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 var _exportNames = {
+  inject: true,
+  Provider: true,
   Store: true
 };
+Object.defineProperty(exports, "inject", {
+  enumerable: true,
+  get: function get() {
+    return _mobxReact.inject;
+  }
+});
+Object.defineProperty(exports, "Provider", {
+  enumerable: true,
+  get: function get() {
+    return _mobxReact.Provider;
+  }
+});
 Object.defineProperty(exports, "Store", {
   enumerable: true,
   get: function get() {
@@ -13,6 +27,8 @@ Object.defineProperty(exports, "Store", {
   }
 });
 exports.default = void 0;
+
+var _mobxReact = require("mobx-react");
 
 var _store = _interopRequireDefault(require("./store"));
 
