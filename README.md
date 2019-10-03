@@ -63,7 +63,9 @@ export default store;
 
 ### Helpers Methods
 
-support `mapState`,`mapMutations`,`mapGetters`,`mapActions`,`createNamespacedHelpers`. they can be used in [react-vue-like](https://github.com/gxlmyacc/react-vue-like) see [Vuex](https://vuex.vuejs.org/guide/)
+support `mapState`,`mapMutations`,`mapGetters`,`mapActions`,`createNamespacedHelpers`. they can be used with [react-vue-like](https://github.com/gxlmyacc/react-vue-like).
+
+see [Vuex](https://vuex.vuejs.org/guide/)
 
 ### Mobx re-export
 `react-vuex-like` also re-export `inject`, `Provider` from `mobx-react`.
