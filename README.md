@@ -68,7 +68,7 @@ support `mapState`,`mapMutations`,`mapGetters`,`mapActions`,`createNamespacedHel
 see [Vuex](https://vuex.vuejs.org/guide/)
 
 ### Mobx re-export
-`react-vuex-like` also re-export `inject`, `Provider` from `mobx-react`.
+`react-vuex-like` also re-export `inject`, `Provider` from `mobx-react`. see [Connect components to provided stores using inject](https://mobx.js.org/refguide/observer-component.html#connect-components-to-provided-stores-using-inject)
 
 ## License
 
