@@ -64,7 +64,7 @@ class Store {
 
     let _mutations = module.mutations || {};
     this.mutations = {};
-    Object.keys(_mutations).forEach(key => this.mutations[key] = action(key, _mutations[key]));
+    Object.keys(_mutations).forEach(key => this.mutations[key] = action(`[react-vuex-like]${this.namespace}:${key}`, _mutations[key]));
 
     this.actions = module.actions ? { ...module.actions } : {};
 
@@ -83,6 +83,11 @@ class Store {
     if (module.install) this.install = module.install.bind(this);
 
     if (this.plugins) this.plugins.forEach(p => p(this));
+  }
+
+  get namespace() {
+    let moduleName = this.moduleName || 'root';
+    return this.parent ? `${this.parent.namespace}/${moduleName}` : moduleName;
   }
 
   _getModuleKey(moduleName, key) {
