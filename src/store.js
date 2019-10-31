@@ -16,7 +16,7 @@ function wrapModuleState(module) {
   Object.keys(module._state).forEach(key => {
     let set = v => {
       if (module.strict && !module._commiting) {
-        throw new Error(`ReactVueLike.Store error: ''${key}' state can only be modified in mutation!`);
+        throw new Error(`ReactVuexLike error: ''${key}' state can only be modified in mutation!`);
       }
       module._state[key] = v;
     };

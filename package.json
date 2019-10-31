@@ -31,14 +31,11 @@
   },
   "author": "gxlmyacc",
   "dependencies": {
-    "mobx": "^4.13.0",
-    "mobx-react": "^6.1.3"
   },
   "peerDependencies": {
     "core-js": ">=2",
-    "mobx": ">=4",
-    "mobx-react": ">=6",
-    "prop-types": ">=15"
+    "mobx": "^4.13.0",
+    "mobx-react": "^6.1.3"
   },
   "devDependencies": {
     "@babel/cli": "^7.2.3",
