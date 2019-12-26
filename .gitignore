@@ -7,8 +7,8 @@ analyzer/
 */analyzer/
 .DS_Store
 */.DS_Store
-preset1/
-demo-out/
 plugin/
-
+esm
+es
+dist
 

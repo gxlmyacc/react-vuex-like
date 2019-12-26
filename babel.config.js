@@ -1,14 +1,15 @@
-module.exports = {
+const config = {
   presets: [
     [
       '@babel/preset-env',
       {
-        modules: 'commonjs',
-        useBuiltIns: 'entry',
+        modules: false,
+        useBuiltIns: 'usage',
         corejs: 2,
-        targets: { browsers: ['Chrome >= 49'] }
+        targets: { browsers: ['Chrome >= 31'] }
       }
     ],
+    '@babel/typescript',
   ],
   plugins: [
     ['@babel/plugin-proposal-decorators', { legacy: true }],
@@ -27,3 +28,15 @@ module.exports = {
     '@babel/plugin-transform-arrow-functions'
   ]
 };
+
+module.exports = process.env.BUILD_ENV === 'es'
+  ? {
+    presets: [
+      '@babel/typescript',
+    ],
+    plugins: [
+      '@babel/proposal-class-properties',
+      '@babel/proposal-object-rest-spread'
+    ]
+  }
+  : config;
