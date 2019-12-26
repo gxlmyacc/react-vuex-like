@@ -12,70 +12,127 @@ function defComputed(obj: any, key: string, get?: () => any, set?: (v: any) => v
 export type MutationListener = (event: { type: string, payload: any }, state: Partial<any>) => void;
 export type ActionListener = (event: { type: string, payload: any }, state: Partial<any>) => void;
 
-export interface StoreModule {
+
+export interface StoreBase {
+  state: Partial<any>,
+  getters: Partial<any>,
+  // modules?: {
+  //   [moduleName: string]: any;
+  // }
+}
+
+export interface StoreModule<
+  S extends Partial<any> = Partial<any>,
+  G extends Partial<any> = Partial<any>,
+  P extends StoreBase = { state: Partial<any>, getters: Partial<any> },
+  M extends Partial<StoreModule> = { [key: string]: StoreModule }
+> {
   namespaced: boolean;
   strict?: boolean;
-  plugins?: StorePlugin[];
+  plugins?: StorePlugin<S, G, P, M>[];
   extends?: Store;
 
-  state: Partial<any>;
+  state: Partial<S>;
 
-  getters?: Partial<any>;
+  getters?: Partial<G>;
 
   mutations?: Partial<any>;
 
   actions?: Partial<any>;
 
   modules?: {
-    [moduleName: string]: StoreModule;
+    [K in keyof M]?: M;
   },
 
   install?(ReactVueLike: any, options: { App: any }): void;
 }
 
-export type StorePlugin = (store: Store) => void;
+export type StorePlugin<
+  S extends Partial<any> = Partial<any>,
+  G extends Partial<any> = Partial<any>,
+  P extends StoreBase = { state: Partial<any>, getters: Partial<any> },
+  M extends Partial<StoreModule> = { [key: string]: StoreModule }
+> = (store: Store<S, G, P, M>) => void;
 
-class Store {
+class Store<
+  S extends Partial<any> = Partial<any>,
+  G extends Partial<any> = Partial<any>,
+  P extends StoreBase = { state: Partial<any>, getters: Partial<any> },
+  M extends Partial<StoreModule> = { [key: string]: StoreModule }
+> implements StoreBase {
 
-  root: Store;
+  state: P['state'] & S & {
+    [K in keyof M]: {
+      [K in keyof M['state']]?: M['state'][K];
+    }
+  };
 
-  parent?: Store;
+  getters: P['getters'] & G & {
+    [K in keyof M]: {
+      [K in keyof M['getters']]?: M['getters'][K];
+    }
+  };
 
-  mutationListeners: MutationListener[];
+  readonly moduleName: string;
 
-  actionListeners: ActionListener[];
+  readonly namespaced: boolean;
 
-  moduleName: string;
+  readonly strict: boolean;
 
-  namespaced: boolean;
+  protected root: any;
 
-  strict: boolean;
+  protected parent?: any;
 
-  extends?: Store;
+  protected mutationListeners: MutationListener[];
 
-  state: Partial<any>;
+  protected actionListeners: ActionListener[];
 
-  getters: Partial<any>;
+  protected mutations: {
+    [event: string]: (
+      state: P['state'] & S & {
+        [K in keyof M]: {
+          [K in keyof M['state']]?: M['state'][K];
+        }
+      },
+      payload: any,
+      parent?: Store,
+      root?: Store
+    ) => any;
+  };
 
-  mutations: Partial<any>;
+  protected actions: {
+    [event: string]: ({ state, getters, commit }: {
+      state: P['state'] & S & {
+        [K in keyof M]: {
+          [K in keyof M['state']]?: M['state'][K];
+        }
+      },
+      getters: P['getters'] & G & {
+        [K in keyof M]: {
+          [K in keyof M['getters']]?: M['getters'][K];
+        }
+      };
+      commit: (event: string, payload: any) => any;
+    }) => any;
+  };
 
-  actions: Partial<any>;
-
-  modules: {
+  protected modules: {
     [moduleName: string]: Store
   }
 
-  plugins: StorePlugin[];
+  protected plugins: StorePlugin<S, G, P, M>[];
 
-  private _commiting: boolean;
+  protected extends?: Store;
 
-  private _module: StoreModule;
+  protected _commiting: boolean;
 
-  private _state: Partial<any>;
+  protected _module: StoreModule<S, G, P, M>;
 
-  private _getters: Partial<any>;
+  protected _state: S;
 
-  constructor(module: StoreModule, parent?: Store, root?: Store, moduleName?: string) {
+  protected _getters: G;
+
+  constructor(module: StoreModule<S, G, P, M>, parent?: Store, root?: Store, moduleName?: string) {
     this.root = root || this;
     this.parent = parent;
     this.mutationListeners = [];
@@ -85,19 +142,17 @@ class Store {
     this.strict = Boolean(module.strict);
     this._commiting = false;
     this._module = module;
-    this.state = {};
-    this.getters = {};
     this.mutations = {};
     this.actions = {};
     this.modules = {};
     this.plugins = module.plugins || [];
-    this.extends = module.extends;
+    this.extends = module.extends as any;
 
-    this._state = observable.object(module.state || {});
+    this._state = observable.object<S>((module.state || {}) as any);
     this._getters = this._createGetters(module.getters);
 
-    this.state =  observable.object(this._createState());
-    this.getters = observable.object(this._getters);
+    this.state =  observable.object<S>(this._createState() as S);
+    this.getters = observable.object<G>(this._getters);
 
     let _mutations = module.mutations || {};
     this.mutations = {};
@@ -114,7 +169,9 @@ class Store {
     }
 
     if (module.modules) {
-      Object.keys(module.modules).forEach(moduleName => module.modules && this.registerModule(moduleName, module.modules[moduleName]));
+      Object.keys(module.modules).forEach(moduleName => {
+        module.modules && this.registerModule(moduleName, (module.modules as any)[moduleName]);
+      });
     }
 
     if (module.install) this.install = module.install.bind(this);
@@ -127,7 +184,7 @@ class Store {
     return this.parent ? `${this.parent.namespace}/${moduleName}` : moduleName;
   }
 
-  _createState(state?: Partial<any>) {
+  protected _createState(state?: Partial<any>) {
     if (!state) state = {};
     if (!this._state) return state;
 
@@ -138,7 +195,7 @@ class Store {
         if (this.strict && !this._commiting) {
           throw new Error(`ReactVuexLike error: ''${key}' state can only be modified in mutation!`);
         }
-        this._state[key] = v;
+        (this._state as any)[key] = v;
       };
       defComputed(
         state,
@@ -148,33 +205,33 @@ class Store {
       );
     });
 
-    return state;
+    return state as S;
   }
 
-  _createGetters(getters?: Partial<any>) {
+  protected _createGetters(getters?: Partial<any>): G {
     if (!getters) getters = {};
 
     if (this._module.extends) this._module.extends._createGetters(getters);
 
     if (this._getters) {
       Object.keys(this._getters).forEach(key => defComputed(getters, key, () => {
-        let get = this._getters[key];
+        let get = this._getters[key] as any;
         return get(this.state, this.getters, this.root.state, this.root.getters);
       }));
     }
 
-    return getters;
+    return getters as G;
   }
 
-  _getModuleKey(moduleName: string, key: string) {
+  protected _getModuleKey(moduleName: string, key: string) {
     return this.namespaced ? `${moduleName}/${key}` : key;
   }
 
-  _mergeState(moduleName: string, state: Partial<any>) {
+  protected _mergeState(moduleName: string, state: Partial<any>) {
     set(this.state, moduleName, state);
   }
 
-  _mergeGetters(moduleName: string, getters: Partial<any>) {
+  protected _mergeGetters(moduleName: string, getters: Partial<any>) {
     const newGetters = {};
     const keys = Object.keys(getters);
     if (!keys.length) return;
@@ -187,7 +244,7 @@ class Store {
     if (this.parent) this.parent._mergeGetters(this.moduleName, getters);
   }
 
-  _mergeMutations(moduleName: string, mutations: Partial<any>) {
+  protected _mergeMutations(moduleName: string, mutations: Partial<any>) {
     const newMutations: Partial<any> = {};
     const keys = Object.keys(newMutations);
     if (!keys.length) return;
@@ -196,7 +253,7 @@ class Store {
     if (this.parent) this.parent._mergeMutations(this.moduleName, mutations);
   }
 
-  _mergeActions(moduleName: string, actions: Partial<any>) {
+  protected _mergeActions(moduleName: string, actions: Partial<any>) {
     const newAtions: Partial<any> = {};
     const keys = Object.keys(newAtions);
     if (!keys.length) return;
@@ -205,21 +262,21 @@ class Store {
     if (this.parent) this.parent._mergeActions(this.moduleName, actions);
   }
 
-  _removeState(key: string) {
+  protected _removeState(key: string) {
     remove(this.state, key);
   }
 
-  _removeGetter(key: string) {
+  protected _removeGetter(key: string) {
     remove(this.getters, key);
     if (this.parent) this.parent._removeGetter(this.parent._getModuleKey(this.moduleName, key));
   }
 
-  _removeMutation(key: string) {
+  protected _removeMutation(key: string) {
     delete this.mutations[key];
     if (this.parent) this.parent._removeMutation(this.parent._getModuleKey(this.moduleName, key));
   }
 
-  _removeAction(key: string) {
+  protected _removeAction(key: string) {
     delete this.actions[key];
     if (this.parent) this.parent._removeAction(this.parent._getModuleKey(this.moduleName, key));
   }
@@ -232,15 +289,15 @@ class Store {
     const _state: Partial<any> = { ...state };
 
     Object.keys(this.modules).forEach(moduleName => _state[moduleName] = this.modules[moduleName].state || {});
-    this._state = observable.object(_state);
-    this.state = observable.object(this._createState());
+    this._state = observable.object<S>(_state as S);
+    this.state = observable.object<S>(this._createState() as S);
   }
 
-  registerModule(moduleName: string, module: StoreModule) {
+  registerModule(moduleName: string, module?: StoreModule) {
     if (!moduleName) return;
     if (this.modules[moduleName]) this.unregisterModule(moduleName);
     if (!module) return;
-    return this.modules[moduleName] = new Store(module, this, this.root, moduleName);
+    return this.modules[moduleName] = new Store(module, this as any, this.root, moduleName);
   }
 
   unregisterModule(moduleName: string) {
